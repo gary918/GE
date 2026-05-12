@@ -1,12 +1,6 @@
-import csv
-import io
-import json
-import time
 import logging
 import sys
-import math
 import os
-from google.cloud import storage
 import google.auth
 from google.auth.transport.requests import AuthorizedSession
 
@@ -35,6 +29,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger()
 
+def get_endpoint(location: str) -> str:
+    """
+    Returns the correct Discovery Engine endpoint based on location.
+
+    Args:
+        location (str): The location (e.g., "global", "us", "eu").
+
+    Returns:
+        str: The endpoint hostname.
+    """
+    if location == "global":
+        return "discoveryengine.googleapis.com"
+    return f"{location}-discoveryengine.googleapis.com"
+
 # Functions for discovering default license and listing user licenses 
 def get_session():
     """Authenticates and returns an authorized session."""
@@ -46,7 +54,8 @@ def get_session():
 # Function to discover default license configuration (Gemini Enterprise) 
 def discover_default_license(session):
     """Find the active defaultLicenseConfig.""" 
-    url = f"https://discoveryengine.googleapis.com/v1/projects/{PROJECT_ID}/locations/{LOCATION}/userStores/default_user_store"
+    endpoint = get_endpoint(LOCATION)
+    url = f"https://{endpoint}/v1/projects/{PROJECT_ID}/locations/{LOCATION}/userStores/default_user_store"
     headers = {"X-Goog-User-Project": PROJECT_ID}
 
     logger.info("🔍 Step 1: Querying User Store for default license configuration...")
@@ -64,7 +73,7 @@ def discover_default_license(session):
     return config
 
 # Function to list user licenses 
-def list_user_licenses(project_id=PROJECT_ID, location=LOCATION):
+def list_user_licenses():
     """
     Lists user licenses from Google Cloud Discovery Engine API.
     Equivalent to the provided curl command.
@@ -72,11 +81,12 @@ def list_user_licenses(project_id=PROJECT_ID, location=LOCATION):
     # Create an authorized session to handle the token automatically
     authed_session = get_session()
 
-    url = f"https://discoveryengine.googleapis.com/v1/projects/{project_id}/locations/{location}/userStores/default_user_store/userLicenses"
+    endpoint = get_endpoint(LOCATION)
+    url = f"https://{endpoint}/v1/projects/{PROJECT_ID}/locations/{LOCATION}/userStores/default_user_store/userLicenses"
 
     headers = {
         "Content-Type": "application/json",
-        "X-Goog-User-Project": project_id
+        "X-Goog-User-Project": PROJECT_ID
     }
 
     try:
@@ -102,7 +112,8 @@ def add_user(user_principal: str, license_config: str) -> bool:
         bool: True if the assignment was successful (or mock assigned in dry run), False otherwise.
     """
     session = get_session()
-    url = f"https://discoveryengine.googleapis.com/v1/projects/{PROJECT_ID}/locations/{LOCATION}/userStores/default_user_store:batchUpdateUserLicenses"
+    endpoint = get_endpoint(LOCATION)
+    url = f"https://{endpoint}/v1/projects/{PROJECT_ID}/locations/{LOCATION}/userStores/default_user_store:batchUpdateUserLicenses"
     headers = {"X-Goog-User-Project": PROJECT_ID, "Content-Type": "application/json"}
 
     payload = {
@@ -186,7 +197,7 @@ def add_user(user_principal: str, license_config: str) -> bool:
 
 if __name__ == "__main__":
     session = get_session()
-    email_address = "eric@garyvwang.altostrat.com" 
+    email_address = os.environ.get("EMAIL_ADDRESS", "eric@mycompany.com")
     
     # 1. Discover Default License
     try:
@@ -194,4 +205,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Could not discover default license: {e}")
 
+    # 2. Add user with license configuration 
     add_user(email_address, default_license)
