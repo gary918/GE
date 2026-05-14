@@ -1,4 +1,5 @@
-# Gemini Enterprise User License Provisioning
+# Gemini Enterprise User Management Tool
+This script is used to manage Gemini Enterprise user licenses and IAM roles. It can be used to add, delete users to Gemini Enterprise and IAM roles.
 
 ## Prerequisites
 * Login Google Cloud by using `gcloud auth application-default login`
@@ -9,5 +10,5 @@
 * Setup the python environment `python3 -m venv .venv`
 * Install needed libs `pip install -r requirements.txt`
 * Set enviroment variables in .env file
-* Dry run (optional) `python3 add_user.py`
-* Production run `python3 add_user.py`
+* Dry run (optional) `python3 manage_ge_user.py`
+* Production run `python3 manage_ge_user.py`
